@@ -18,6 +18,7 @@ function [C, ia, ic] = unique_stable (A, varargin)
     optstable = any (strcmp ("stable", varargin));
     optsorted = any (strcmp ("sorted", varargin));
     optlegacy = any (strcmp ("legacy", varargin));
+    
     if (optfirst && optlast)
       error ('unique: cannot specify both "first" and "last"');
     elseif (optstable && optlast)
@@ -31,11 +32,18 @@ function [C, ia, ic] = unique_stable (A, varargin)
       warning ('unique: "rows" is ignored for cell arrays');
       optrows = false;
     endif
+    
+    if optlegacy && ~(optfirst || optlast)
+      optlast = true;
+    elseif ~optlegacy && (optfirst || optlast)
+      optlegacy = true;
+    endif
   #default values
   else
     optrows = false;
     optlast = false;
     optstable = false;
+    optlegacy = false;
   endif
 
   if optrows
@@ -48,20 +56,15 @@ function [C, ia, ic] = unique_stable (A, varargin)
     if isempty(A)
       C = [];
       break
-    elseif optlegacy && size(A,1) < size(A,2)
+    elseif optlegacy && (size(A,1) < size(A,2))
       C = NaN(1,numel(A));
       ia = NaN(1,numel(A));
       ic = NaN(1,numel(A));
     else
       ia = NaN(numel(A),1);
       ic = NaN(numel(A),1);
-      if ~optlegacy && (any(size(A) == 1)
-        C = NaN(1,numel(A));
-      else
-        C = NaN(numel(A),1);
-      endif
+      C = NaN(numel(A),1);
     endif
-    
   endif
 
   if optlast
@@ -112,6 +115,9 @@ function [C, ia, ic] = unique_stable (A, varargin)
       ia = ia(sortIndex);
       ic = sortIndex(ic);
     endif
+      if (~optlegacy) && (any(size(A) == 1))
+        C = C';
+      endif
   endif
   
 endfunction
@@ -172,7 +178,7 @@ endfunction
 
 ## Test input validation
 %!error unique_stable ()
-%!error <X must be an array or cell array of strings> unique_stable ({1})
+%!error <A must be an array or cell array of strings> unique_stable ({1})
 %!error <options must be strings> unique_stable (1, 2)
 %!error <cannot specify both "first" and "last"> unique_stable (1, "first", "last")
 %!error <invalid option> unique_stable (1, "middle")
