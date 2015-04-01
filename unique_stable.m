@@ -4,38 +4,36 @@ function [C, ia, ic] = unique_stable (A, varargin)
     print_usage ();
   elseif (!(isnumeric (A) || islogical (A) || ischar (A) || iscellstr (A)))
     error ("unique: A must be an array or cell array of strings");
+  elseif (nargin > 1 && ! iscellstr (varargin))
+    error ("unique: options must all be strings");
   endif
 
-  if (nargin > 1)
-    ## parse options
-    if (! iscellstr (varargin))
-      error ("unique: options must be strings");
-    endif
+  optrows   = false;
+  optfirst  = false;
+  optlast   = false;
+  optstable = false;
+  optsorted = false;
+  optlegacy = false;
+  for o = varargin'
+    switch (tolower (o{1}))
+      case "rows",    optrows   = true;
+      case "first",   optfirst  = true;
+      case "last",    optlast   = true;
+      case "stable",  optstable = true;
+      case "sorted",  optsorted = true;
+      case "legacy",  optlegacy = true;
+      otherwise,
+        error ("unique: invalid option %s", o{1});
+    endswitch
+  endfor
 
-    optrows  = any (strcmp ("rows", varargin));
-    optfirst = any (strcmp ("first", varargin));
-    optlast  = any (strcmp ("last", varargin));
-    optstable = any (strcmp ("stable", varargin));
-    optsorted = any (strcmp ("sorted", varargin));
-    optlegacy = any (strcmp ("legacy", varargin));
-    if (optfirst && optlast)
-      error ('unique: cannot specify both "first" and "last"');
-    elseif (optstable && optlast)
-      error ("unique: cannot specify 'stable' with 'last'");
-    elseif (optfirst + optlast + optrows...
-    + optstable + optsorted + optlegacy != nargin-1)
-      error ("unique: invalid option");
-    endif
-
-    if (optrows && iscellstr (A))
-      warning ('unique: "rows" is ignored for cell arrays');
-      optrows = false;
-    endif
-  #default values
-  else
+  if (optfirst && optlast)
+    error ("unique: options ""first"" and ""last"" are mutually exclusive");
+  elseif (optstable && optlast)
+    error ("unique: options ""first"" and ""last"" are mutually exclusive");
+  elseif (optrows && iscellstr (A))
+    warning ("unique: option ""rows"" is ignored for cell arrays");
     optrows = false;
-    optlast = false;
-    optstable = false;
   endif
 
   if optrows
